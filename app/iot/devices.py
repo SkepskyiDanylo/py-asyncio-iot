@@ -1,5 +1,4 @@
 import asyncio
-import time
 
 from .message import MessageType
 
@@ -17,7 +16,7 @@ class HueLightDevice:
 
     async def disconnect(self) -> None:
         print("Disconnecting Hue Light.")
-        time.sleep(TIME_TO_SLEEP)
+        await asyncio.sleep(TIME_TO_SLEEP)
         print("Hue Light disconnected.")
 
     async def send_message(

@@ -1,7 +1,7 @@
 import asyncio
 import random
 import string
-from typing import Protocol
+from typing import Protocol, Awaitable, Any
 
 from .message import Message, MessageType
 
@@ -45,9 +45,15 @@ class IOTService:
     async def run_program(self, program: list[Message]) -> None:
         print("=====RUNNING PROGRAM======")
         async with asyncio.TaskGroup() as tg:
-            for msg in program:
-                tg.create_task(self.send_msg(msg))
+            for parallel_group in program:
+                if isinstance(parallel_group, list):
+                    for message in parallel_group:
+                        group = [tg.create_task(self.send_msg(message))]
+                    await asyncio.gather(*group)
+                else:
+                    await self.send_msg(parallel_group)
         print("=====END OF PROGRAM======")
+
 
     async def send_msg(self, msg: Message) -> None:
         await self.devices[msg.device_id].send_message(msg.msg_type, msg.data)

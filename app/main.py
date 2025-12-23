@@ -21,12 +21,13 @@ async def main() -> None:
         asyncio.create_task(service.register_device(toilet)),
     ]
 
-    hue_light_id, speaker_id, toilet_id = await asyncio.gather(*tasks)
+    hue_light_id, speaker_id, toilet_id = await asyncio.gather(*tasks, return_exceptions=True)
 
     # create a few programs
     wake_up_program = [
-        Message(hue_light_id, MessageType.SWITCH_ON),
-        Message(speaker_id, MessageType.SWITCH_ON),
+        [
+            Message(hue_light_id, MessageType.SWITCH_ON),
+            Message(speaker_id, MessageType.SWITCH_ON),],
         Message(
             speaker_id,
             MessageType.PLAY_SONG,
@@ -34,8 +35,10 @@ async def main() -> None:
     ]
 
     sleep_program = [
-        Message(hue_light_id, MessageType.SWITCH_OFF),
-        Message(speaker_id, MessageType.SWITCH_OFF),
+        [
+            Message(hue_light_id, MessageType.SWITCH_OFF),
+            Message(speaker_id, MessageType.SWITCH_OFF),
+        ],
         Message(toilet_id, MessageType.FLUSH),
         Message(toilet_id, MessageType.CLEAN),
     ]
