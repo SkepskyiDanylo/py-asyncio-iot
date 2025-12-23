@@ -3,6 +3,7 @@ import random
 import string
 from typing import Protocol, Awaitable, Any
 
+from .enums import RunTypeEnum
 from .message import Message, MessageType
 
 
@@ -42,18 +43,22 @@ class IOTService:
     async def get_device(self, device_id: str) -> Device:
         return self.devices[device_id]
 
-    async def run_program(self, program: list[Message]) -> None:
+    async def run_program(self, program: list[Message], run_type: RunTypeEnum) -> None:
         print("=====RUNNING PROGRAM======")
-        async with asyncio.TaskGroup() as tg:
-            for parallel_group in program:
-                if isinstance(parallel_group, list):
-                    for message in parallel_group:
-                        group = [tg.create_task(self.send_msg(message))]
-                    await asyncio.gather(*group)
-                else:
-                    await self.send_msg(parallel_group)
+        if run_type.value == "parallel":
+            await self.run_parallel(*[asyncio.create_task(self.send_msg(msg)) for msg in program])
+        elif run_type.value == "sequential":
+            await self.run_sequence(*[self.send_msg(msg) for msg in program])
         print("=====END OF PROGRAM======")
 
+    @staticmethod
+    async def run_parallel(*functions: Awaitable[Any]) -> None:
+        await asyncio.gather(*functions)
+
+    @staticmethod
+    async def run_sequence(*functions: Awaitable[Any]) -> None:
+        for function in functions:
+            await function
 
     async def send_msg(self, msg: Message) -> None:
         await self.devices[msg.device_id].send_message(msg.msg_type, msg.data)

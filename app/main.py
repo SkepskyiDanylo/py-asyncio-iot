@@ -1,5 +1,7 @@
 import time
 import asyncio
+
+from app.iot.enums import RunTypeEnum
 from iot.devices import HueLightDevice, SmartSpeakerDevice, SmartToiletDevice
 from iot.message import Message, MessageType
 from iot.service import IOTService
@@ -23,29 +25,39 @@ async def main() -> None:
 
     hue_light_id, speaker_id, toilet_id = await asyncio.gather(*tasks, return_exceptions=True)
 
-    # create a few programs
-    wake_up_program = [
-        [
-            Message(hue_light_id, MessageType.SWITCH_ON),
-            Message(speaker_id, MessageType.SWITCH_ON),],
-        Message(
-            speaker_id,
-            MessageType.PLAY_SONG,
-            "Rick Astley - Never Gonna Give You Up"),
-    ]
+    # Wake up
+    # Parallel
+    await service.run_program([
+        Message(hue_light_id, MessageType.SWITCH_ON),
+        Message(speaker_id, MessageType.SWITCH_ON),
+    ],
+        RunTypeEnum.PARALLEL
+    )
+    # Sequential
+    await service.run_program([Message(
+        speaker_id,
+        MessageType.PLAY_SONG,
+        "Rick Astley - Never Gonna Give You Up")
+    ],
+        RunTypeEnum.SEQUENTIAL
+    )
 
-    sleep_program = [
+    # Sleep
+    # Parallel
+    await service.run_program(
         [
             Message(hue_light_id, MessageType.SWITCH_OFF),
             Message(speaker_id, MessageType.SWITCH_OFF),
         ],
+        RunTypeEnum.PARALLEL
+    )
+    await service.run_program([
+
         Message(toilet_id, MessageType.FLUSH),
         Message(toilet_id, MessageType.CLEAN),
-    ]
-
-    # run the programs
-    await service.run_program(wake_up_program)
-    await service.run_program(sleep_program)
+    ],
+        RunTypeEnum.SEQUENTIAL
+    )
 
 
 if __name__ == "__main__":
